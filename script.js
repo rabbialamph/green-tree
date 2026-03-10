@@ -8,11 +8,16 @@ const modalImage = document.getElementById("modalImage");
 const modalCategory = document.getElementById("modalCategory");
 const modalDescription = document.getElementById("modalDescription");
 const modalPrice = document.getElementById("modalPrice");
+const cartContainer = document.getElementById("cartContainer");
+const emptyCartMessage = document.getElementById("emptyCartMessage");
+
+const cart = [];
 
 
 
 
 const loadCategory = async () =>{
+   
     const res = await fetch(
         "https://openapi.programming-hero.com/api/categories"
     );
@@ -24,8 +29,8 @@ const loadCategory = async () =>{
         btn.textContent = category.category_name;
         btn.onclick = () => selectCategory(category.id, btn);
         categoryContainer.appendChild(btn);
+        
     });
-
 };
 
 
@@ -72,6 +77,7 @@ allTreesbtn.addEventListener("click", () =>{
 
 
 const loadTrees = async () =>{
+     loadSpinner.classList.remove("hidden");
     // showSpinner();
     const res = await fetch(
         "https://openapi.programming-hero.com/api/plants"
@@ -80,6 +86,8 @@ const loadTrees = async () =>{
     
     displayTrees(data.plants);
     // hideSpinner();
+    loadSpinner.classList.add("hidden");
+
 };
 
 const displayTrees = (plants) =>{
@@ -99,7 +107,7 @@ const displayTrees = (plants) =>{
                 <span class="border border-green-400 rounded-[8px] px-3 py-[1px] text-[12px] text-green-400">${element.category}</span>
                 <div class="card-actions justify-between items-center mt-5">
                     <h2 class="text-green-400 font-bold text-[18px]">$${element.price}</h2>
-                    <button class="btn btn-success">Cart</button>
+                    <button class="btn btn-success" onclick="addToCart(${element.id}, '${element.name}', ${element.price})">Cart</button>
                 </div>
             </div>
         </div>`;
@@ -132,14 +140,59 @@ loadTrees();
 
 
 
-// load spinner function
-const showSpinner = () => {
-    loadSpinner.classList.remove("hidden");
-    loadSpinner.classList.add("flex");
-     treesContainer.classList.add("hidden")
-};
-const hideSpinner = () => {
-    loadSpinner.classList.add("hidden");
-    loadSpinner.classList.remove("flex");
-    treesContainer.classList.remove("hidden")
-};
+const addToCart = (id, name, price) =>{
+    // console.log(id, name, price, "add to cart")
+    const existingItem = cart.find(item => item.id === id);
+    if(existingItem){
+        existingItem.quantity += 1;
+    }else{
+    cart.push({
+       id,
+       name,
+       price,
+       quantity: 1,
+    });
+    }
+   
+
+    updateCart();
+
+    };
+
+   const cartRemove = (id) =>{
+    const index = cart.findIndex(item => item.id === id);
+    if (index !== -1){
+        cart.splice(index, 1);
+    }
+    updateCart();
+
+   };
+
+    const updateCart = () =>{
+       cartContainer.innerHTML = "";
+       if(cart.length === 0){
+        emptyCartMessage.classList.remove("hidden");
+       }else{
+         emptyCartMessage.classList.add("hidden");
+       }
+
+       cart.forEach(item => {
+        const cartItem = document.createElement("div");
+        cartItem.innerHTML = `<div class="bg-slate-100 rounded-[5px] p-6 flex justify-between">
+                            <div class="space-y-1.5">
+                                <h2 class="font-semibold">${item.name}</h2>
+                                <p class="font-semibold">$${item.price} × ${item.quantity}</p>
+                            </div>
+                            <div class="space-y-4">
+                                <button class="btn btn-ghost" onclick="cartRemove(${item.id})">X</button>
+                                <p class="text-right font-semibold text-xl">$${item.price * item.quantity}</p>
+                            </div> 
+                        </div>`;
+
+        cartContainer.appendChild(cartItem);
+
+       });
+
+       const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    document.getElementById("totalPrice").innerText = `$${totalPrice}`;
+    };
